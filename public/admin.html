@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THE AURORA PROTOCOL — Admin & Volunteer Command Center</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="scanlines"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container nav-content">
+      <div class="brand-wrapper">
+        <div class="classified-tag" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">AURORA CORE</div>
+        <div class="brand-text">
+          <h1>THE AURORA PROTOCOL</h1>
+          <p id="portal-user-role-label">COMMAND & ACCESS CONTROL SYSTEM</p>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button id="btn-sound-toggle" class="btn btn-secondary btn-sm">🔊 AUDIO ON</button>
+        <button id="btn-switch-scanner" class="btn btn-outline-crimson btn-sm" style="display: none;">
+          📷 ROOM SCANNER
+        </button>
+        <button id="btn-admin-logout" class="btn btn-outline-crimson btn-sm" style="display: none;">
+          LOGOUT
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- =========================================================================
+         1. ADMIN LOGIN VIEW (Head Admin & Sub Admin / Volunteer)
+         ========================================================================= -->
+    <div id="admin-login-view" class="auth-wrapper">
+      <div class="auth-card tactical-frame">
+        <div class="auth-header">
+          <div class="classified-tag" style="margin-bottom: 0.75rem;">SECURITY LEVEL: RESTRICTED</div>
+          <h2>CONTROL ROOM ACCESS</h2>
+          <p>HEAD ADMIN & ROOM VOLUNTEER AUTHENTICATION</p>
+        </div>
+
+        <div id="admin-login-alert" class="auth-alert auth-alert-error"></div>
+
+        <form id="admin-login-form">
+          <div class="form-group">
+            <label class="form-label" for="admin-username">OPERATOR IDENTIFIER (ID)</label>
+            <input type="text" id="admin-username" class="form-control" placeholder="e.g. MASHOOD or POLICE01" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="admin-password">SECURITY PASSCODE</label>
+            <input type="password" id="admin-password" class="form-control" placeholder="Enter password" required autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="btn-admin-login-submit">
+            INITIALIZE COMMAND TERMINAL
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         2. HEAD ADMIN COMMAND CENTER (Sidebar + Dynamic Sections)
+         ========================================================================= -->
+    <div id="head-admin-view" class="admin-layout" style="display: none;">
+      <!-- Sidebar Navigation -->
+      <aside class="admin-sidebar">
+        <div class="admin-nav">
+          <a class="admin-nav-item active" data-tab="overview">
+            <span>📊</span> OVERVIEW
+          </a>
+          <a class="admin-nav-item" data-tab="teams">
+            <span>👥</span> TEAMS & QR
+          </a>
+          <a class="admin-nav-item" data-tab="rounds">
+            <span>⏱️</span> ROUNDS & TIME
+          </a>
+          <a class="admin-nav-item" data-tab="volunteers">
+            <span>🛡️</span> SUB ADMINS
+          </a>
+          <a class="admin-nav-item" data-tab="logs">
+            <span>📜</span> ACTIVITY LOGS
+          </a>
+          <a class="admin-nav-item" data-tab="danger" style="color: var(--crimson-bright);">
+            <span>⚠️</span> DANGER ZONE
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Admin Content Area -->
+      <section class="admin-content">
+        <!-- TAB 1: OVERVIEW -->
+        <div id="tab-overview" class="admin-tab-content">
+          <!-- Metrics Cards -->
+          <div class="metrics-grid">
+            <div class="metric-card accent-red">
+              <div class="metric-label">TOTAL REGISTERED TEAMS</div>
+              <div class="metric-value" id="stat-total-teams">0</div>
+            </div>
+            <div class="metric-card accent-green">
+              <div class="metric-label">ACTIVE TEAMS</div>
+              <div class="metric-value" id="stat-active-teams">0</div>
+            </div>
+            <div class="metric-card accent-red">
+              <div class="metric-label">ELIMINATED TEAMS</div>
+              <div class="metric-value" id="stat-eliminated-teams">0</div>
+            </div>
+            <div class="metric-card accent-amber">
+              <div class="metric-label">TEAMS INSIDE ROOMS</div>
+              <div class="metric-value" id="stat-teams-inside">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">COMPLETED ROOM VISITS</div>
+              <div class="metric-value" id="stat-completed-visits">0</div>
+            </div>
+            <div class="metric-card accent-green">
+              <div class="metric-label">CURRENT EVENT ROUND</div>
+              <div class="metric-value" id="stat-current-round">1</div>
+            </div>
+          </div>
+
+          <!-- Live Room Occupancy Cards -->
+          <h3 style="margin-bottom: 1rem; font-size: 1.15rem;">🏢 LIVE INVESTIGATION ROOM OCCUPANCY</h3>
+          <div class="rooms-grid" id="admin-rooms-occupancy">
+            <!-- Dynamically populated room cards -->
+          </div>
+
+          <!-- Quick Leaderboard & Inline Score Update -->
+          <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span>🏆</span>
+                <span>CURRENT LEADERBOARD (FAST SCORE ADJUSTMENT)</span>
+              </div>
+              <span class="mono text-dim" style="font-size: 0.8rem;">Change marks and hit Save to update live</span>
+            </div>
+            <div class="table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>RANK</th>
+                    <th>TEAM ID</th>
+                    <th>TEAM NAME</th>
+                    <th>STATUS</th>
+                    <th>CURRENT SCORE</th>
+                    <th>QUICK ADJUST</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-leaderboard-tbody">
+                  <!-- Rows injected -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: TEAMS & QR MANAGEMENT -->
+        <div id="tab-teams" class="admin-tab-content" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <input type="text" id="team-search-input" class="form-control" placeholder="Search by name or ID..." style="max-width: 280px;">
+            </div>
+            <button class="btn btn-primary" id="btn-open-create-team">
+              + REGISTER NEW TEAM
+            </button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>TEAM ID</th>
+                  <th>TEAM NAME</th>
+                  <th>SCORE</th>
+                  <th>STATUS</th>
+                  <th>ROOM VISITS</th>
+                  <th>QR IDENTIFIER</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="teams-management-tbody">
+                <!-- Rows injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: ROUNDS & TIME LIMITS -->
+        <div id="tab-rounds" class="admin-tab-content" style="display: none;">
+          <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span>🔄</span>
+                <span>EVENT ROUND CONTROLS</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-create-round">+ CREATE NEXT ROUND</button>
+            </div>
+            <div id="rounds-list-container" style="display: flex; flex-direction: column; gap: 1rem;">
+              <!-- Dynamically populated rounds list -->
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span>⏱️</span>
+                <span>ROOM TIME SETTINGS (PER ROUND)</span>
+              </div>
+            </div>
+            <div id="room-settings-matrix">
+              <!-- Matrix of round + room duration inputs -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: SUB ADMINS (VOLUNTEERS) -->
+        <div id="tab-volunteers" class="admin-tab-content" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3>ROOM VOLUNTEER ACCOUNTS</h3>
+            <button class="btn btn-primary btn-sm" id="btn-open-create-subadmin">+ CREATE SUB ADMIN</button>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ADMIN ID</th>
+                  <th>VOLUNTEER NAME</th>
+                  <th>ASSIGNED ROOM</th>
+                  <th>CREATED AT</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="subadmins-tbody">
+                <!-- Rows injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 5: ACTIVITY LOGS -->
+        <div id="tab-logs" class="admin-tab-content" style="display: none;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span>📜</span>
+                <span>REAL-TIME AUDIT & SCAN LOGS</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-logs">REFRESH LOGS</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>TIMESTAMP</th>
+                    <th>USER / SYSTEM</th>
+                    <th>ACTION</th>
+                    <th>DETAILS</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-tbody">
+                  <!-- Rows injected -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 6: DANGER ZONE -->
+        <div id="tab-danger" class="admin-tab-content" style="display: none;">
+          <div class="card modal-danger" style="margin-bottom: 2rem;">
+            <div class="card-header" style="border-color: var(--crimson);">
+              <div class="card-header-title text-crimson">
+                <span>⚠️</span>
+                <span>RESET WHOLE EVENT SETUP</span>
+              </div>
+            </div>
+            <p style="margin-bottom: 1rem; color: #fca5a5;">
+              This operation clears all room entries, resets active timers, returns team scores to 0, resets active round progress back to Round 1, and clears recent logs.
+              <strong>Team registrations and accounts are preserved.</strong>
+            </p>
+            <button class="btn btn-danger" id="btn-trigger-reset-modal">
+              RESET WHOLE SETUP
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-header-title">
+                <span>🧪</span>
+                <span>SAMPLE TEST DATA TOOLS</span>
+              </div>
+            </div>
+            <p class="text-muted" style="margin-bottom: 1.25rem;">
+              Before the live event begins, you can purge the 5 demo teams or reseed them for rehearsal.
+            </p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary" id="btn-clear-sample-data">
+                🗑️ PURGE ALL SAMPLE TEAMS
+              </button>
+              <button class="btn btn-secondary" id="btn-reseed-sample-data">
+                🔄 RESEED SAMPLE TEAMS (ALPHA, PHANTOM, etc.)
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =========================================================================
+         3. SUB ADMIN / ROOM VOLUNTEER SCANNER INTERFACE
+         ========================================================================= -->
+    <div id="sub-admin-scanner-view" class="container" style="display: none; padding-bottom: 3rem;">
+      <div class="scanner-container">
+        <!-- Room Banner -->
+        <div class="scanner-room-hero tactical-frame">
+          <div>
+            <div class="classified-tag" style="margin-bottom: 0.3rem;">ROOM ACCESS CHECKPOINT</div>
+            <h2 id="scanner-room-name-display" style="font-size: 1.4rem;">POLICE INVESTIGATION ROOM</h2>
+          </div>
+          <div style="text-align: right;">
+            <div class="badge badge-crimson" id="scanner-round-display">ROUND 1</div>
+            <div class="mono text-dim" style="font-size: 0.75rem; margin-top: 0.3rem;" id="scanner-volunteer-name">Volunteer: Rahul</div>
+          </div>
+        </div>
+
+        <!-- Room Occupancy & Active Countdown Widget -->
+        <div id="scanner-active-timer-box" class="countdown-box" style="display: none; margin-bottom: 1.5rem;">
+          <div class="countdown-room-label">
+            CURRENT OCCUPANT: <strong id="scanner-active-team-name" style="color: var(--white);">TEAM PHANTOM</strong>
+          </div>
+          <div class="countdown-digits" id="scanner-countdown-digits">05:00</div>
+          <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 0.75rem;">
+            <button class="btn btn-outline-crimson btn-sm" id="btn-scanner-early-complete">
+              MARK INVESTIGATION COMPLETED
+            </button>
+          </div>
+        </div>
+
+        <!-- Camera Scanner Card -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <div class="card-header-title">
+              <span>📷</span>
+              <span>LIVE QR CAMERA SCANNER</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-toggle-camera">
+              START CAMERA
+            </button>
+          </div>
+
+          <div class="camera-viewport" id="camera-viewport-box">
+            <div id="reader"></div>
+            <div class="scanner-crosshair" id="scanner-crosshair"></div>
+          </div>
+
+          <!-- Rapid Manual Token Entry Fallback -->
+          <div style="margin-top: 1.25rem;">
+            <form id="scanner-manual-form" style="display: flex; gap: 0.5rem;">
+              <input type="text" id="scanner-manual-input" class="form-control" placeholder="Scan or type Team ID (e.g. AURORA001)..." autocomplete="off">
+              <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
+                VALIDATE
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Scan Result Card (Access Granted or Access Denied) -->
+        <div id="scanner-result-feedback" style="display: none;">
+          <!-- Dynamically filled with .scan-result-card.granted or .denied -->
+        </div>
+
+        <!-- Recent Room Entries Table -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <div class="card-header-title">
+              <span>📋</span>
+              <span>TEAMS VISITED THIS ROOM (CURRENT ROUND)</span>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>TEAM ID</th>
+                  <th>TEAM NAME</th>
+                  <th>ENTRY TIME</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="scanner-recent-tbody">
+                <!-- Rows injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       MODALS
+       ========================================================================= -->
+
+  <!-- Modal: Create / Edit Team -->
+  <div id="modal-team" class="modal-overlay">
+    <div class="modal-card tactical-frame">
+      <h3 style="margin-bottom: 1.25rem;" id="modal-team-title">REGISTER NEW TEAM</h3>
+      <form id="form-team-manage">
+        <input type="hidden" id="manage-team-id-pk">
+        <div class="form-group">
+          <label class="form-label" for="manage-team-id">TEAM IDENTIFIER (ID)</label>
+          <input type="text" id="manage-team-id" class="form-control" placeholder="e.g. AURORA006" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="manage-team-name">TEAM NAME</label>
+          <input type="text" id="manage-team-name" class="form-control" placeholder="e.g. TEAM SPECTRE" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="manage-team-score">STARTING SCORE</label>
+          <input type="number" id="manage-team-score" class="form-control" value="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="manage-team-password">PASSWORD (Leave blank to use Team Name)</label>
+          <input type="text" id="manage-team-password" class="form-control" placeholder="Optional custom password">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-team')">CANCEL</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-team-submit">CONFIRM REGISTRATION</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: View & Download QR Code -->
+  <div id="modal-qr" class="modal-overlay">
+    <div class="modal-card tactical-frame" style="text-align: center;">
+      <h3 id="modal-qr-title">TEAM QR IDENTIFIER</h3>
+      <p class="mono text-muted" id="modal-qr-subtext" style="font-size: 0.85rem; margin-top: 0.3rem;">AURORA001 - TEAM ALPHA</p>
+
+      <div class="qr-display-box" id="modal-qr-img-box">
+        <img id="modal-qr-img" src="" alt="Team QR Code">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">SECURE TOKEN VALUE</label>
+        <input type="text" id="modal-qr-token-text" class="form-control mono" readonly style="text-align: center; font-size: 0.8rem;">
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary" id="btn-download-qr">💾 DOWNLOAD QR CARD</button>
+        <button class="btn btn-outline-crimson" id="btn-regenerate-qr">🔄 REGENERATE TOKEN</button>
+        <button class="btn btn-secondary" onclick="closeModal('modal-qr')">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create Sub Admin -->
+  <div id="modal-subadmin" class="modal-overlay">
+    <div class="modal-card tactical-frame">
+      <h3 style="margin-bottom: 1.25rem;">CREATE SUB ADMIN / ROOM VOLUNTEER</h3>
+      <form id="form-subadmin-manage">
+        <div class="form-group">
+          <label class="form-label" for="subadmin-id">ADMIN IDENTIFIER (ID)</label>
+          <input type="text" id="subadmin-id" class="form-control" placeholder="e.g. POLICE02 or LAB02" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subadmin-name">VOLUNTEER NAME</label>
+          <input type="text" id="subadmin-name" class="form-control" placeholder="e.g. Rahul" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subadmin-password">PASSWORD</label>
+          <input type="text" id="subadmin-password" class="form-control" placeholder="Secure passcode" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subadmin-room">ASSIGNED ROOM</label>
+          <select id="subadmin-room" class="form-control" required>
+            <option value="POLICE">POLICE INVESTIGATION ROOM</option>
+            <option value="LAB">SCIENTIST LAB</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-subadmin')">CANCEL</button>
+          <button type="submit" class="btn btn-primary">CREATE ACCOUNT</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Danger Event Reset Confirmation -->
+  <div id="modal-reset-event" class="modal-overlay">
+    <div class="modal-card modal-danger">
+      <div class="danger-stripes"></div>
+      <h3 class="text-crimson" style="margin-bottom: 0.75rem; font-size: 1.4rem;">⚠️ RESET ENTIRE EVENT?</h3>
+      <p style="color: #fca5a5; font-size: 0.9rem; margin-bottom: 1.25rem;">
+        This will wipe all active room countdowns, room access history, reset all team marks back to 0, and revert round to Round 1.
+      </p>
+      <div class="form-group">
+        <label class="form-label" style="color: var(--white);">TO CONFIRM, TYPE: <strong style="color: var(--crimson-bright);">RESET AURORA</strong></label>
+        <input type="text" id="input-confirm-reset-code" class="form-control" placeholder="RESET AURORA" autocomplete="off">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-reset-event')">CANCEL</button>
+        <button type="button" class="btn btn-danger" id="btn-execute-event-reset">CONFIRM RESET EVENT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Fullscreen Time's Up Alarm -->
+  <div id="times-up-modal" class="times-up-modal" style="display: none;">
+    <div class="times-up-title">⏰ TIME'S UP!</div>
+    <div class="times-up-team" id="times-up-team-name">TEAM PHANTOM</div>
+    <div class="times-up-room" id="times-up-room-name">POLICE INVESTIGATION ROOM</div>
+    <p style="color: #fff; font-family: var(--font-mono); font-size: 1.1rem; max-width: 600px; margin-bottom: 2rem;">
+      Your allotted investigation time has ended. The room must now be cleared for the next team.
+    </p>
+    <button class="btn btn-primary btn-lg" id="btn-dismiss-times-up" style="background: #000; border: 2px solid #fff; box-shadow: 0 0 30px #000;">
+      ACKNOWLEDGE & READY NEXT TEAM
+    </button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/html5-qrcode.min.js"></script>
+  <script src="/js/sound.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/scanner.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

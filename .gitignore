@@ -1,0 +1,6 @@
+node_modules/
+data/aurora.sqlite
+data/aurora.sqlite-shm
+data/aurora.sqlite-wal
+.env
+*.log

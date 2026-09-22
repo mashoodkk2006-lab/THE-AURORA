@@ -1,0 +1,1277 @@
+/* ==========================================================================
+   THE AURORA PROTOCOL — CORE DESIGN SYSTEM & STYLING
+   Theme: Police Investigation / Digital Crime Scene Command Center
+   Palette: Obsidian (#08090d), Dark Charcoal (#12151c), Alert Crimson (#e50914),
+            Signal White (#f5f6fa), Muted Slate (#7e889b)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-deep: #07080a;
+  --bg-surface: #0f1217;
+  --bg-card: #151922;
+  --bg-card-hover: #1b202c;
+  --bg-input: #0a0c10;
+  
+  --crimson: #e50914;
+  --crimson-glow: rgba(229, 9, 20, 0.35);
+  --crimson-dim: rgba(229, 9, 20, 0.12);
+  --crimson-bright: #ff2b37;
+  
+  --white: #ffffff;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-dim: #64748b;
+  
+  --border-subtle: #222734;
+  --border-active: #374151;
+  --border-crimson: rgba(229, 9, 20, 0.5);
+  
+  --status-active: #10b981;
+  --status-active-bg: rgba(16, 185, 129, 0.12);
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: 'Orbitron', 'Space Grotesk', sans-serif;
+  --font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 24px var(--crimson-glow);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle background crime scene grid */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanline Overlay (subtle tactical atmosphere) */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.4;
+}
+
+/* Utility Containers */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Typography Helpers */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.text-crimson {
+  color: var(--crimson-bright) !important;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-dim {
+  color: var(--text-dim);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-active {
+  background: var(--status-active-bg);
+  color: var(--status-active);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-crimson {
+  background: var(--crimson-dim);
+  color: var(--crimson-bright);
+  border: 1px solid var(--border-crimson);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--status-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-eliminated {
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* Classified Stamp Effect */
+.classified-tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--crimson);
+  color: var(--crimson-bright);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: rgba(229, 9, 20, 0.08);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  outline: none;
+  text-decoration: none;
+  user-select: none;
+}
+
+.btn-primary {
+  background: var(--crimson);
+  color: var(--white);
+  box-shadow: 0 4px 16px var(--crimson-glow);
+}
+
+.btn-primary:hover {
+  background: var(--crimson-bright);
+  box-shadow: 0 6px 22px rgba(255, 43, 55, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-active);
+  color: var(--white);
+}
+
+.btn-outline-crimson {
+  background: transparent;
+  color: var(--crimson-bright);
+  border: 1px solid var(--crimson);
+}
+
+.btn-outline-crimson:hover {
+  background: var(--crimson-dim);
+  border-color: var(--crimson-bright);
+}
+
+.btn-danger {
+  background: #b91c1c;
+  color: var(--white);
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.5);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Forms & Inputs */
+.form-group {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.form-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  transition: border-color var(--transition-fast);
+  outline: none;
+}
+
+.form-control:focus {
+  border-color: var(--crimson);
+  box-shadow: 0 0 0 3px var(--crimson-glow);
+}
+
+.form-control::placeholder {
+  color: #4b5563;
+}
+
+/* Card Panels */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.card-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.1rem;
+}
+
+/* Tactical Corner Accents */
+.tactical-frame {
+  position: relative;
+}
+
+.tactical-frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-top: 2px solid var(--crimson);
+  border-left: 2px solid var(--crimson);
+}
+
+.tactical-frame::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-bottom: 2px solid var(--crimson);
+  border-right: 2px solid var(--crimson);
+}
+
+/* ==========================================================================
+   INTELLIX STUDENT SPLASH / LOADING SCREEN
+   ========================================================================== */
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  background-color: #040507;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s;
+}
+
+.splash-content {
+  text-align: center;
+  max-width: 500px;
+  padding: 2rem;
+  position: relative;
+}
+
+.splash-logo-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.75rem;
+}
+
+.splash-logo {
+  max-width: 240px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 20px rgba(0, 168, 255, 0.35)) drop-shadow(0 0 35px var(--crimson-glow));
+  animation: logoBreath 2.8s infinite ease-in-out;
+}
+
+@keyframes logoBreath {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(0, 168, 255, 0.3)) drop-shadow(0 0 25px var(--crimson-glow)); }
+  50% { transform: scale(1.03); filter: drop-shadow(0 0 30px rgba(0, 168, 255, 0.6)) drop-shadow(0 0 45px rgba(229, 9, 20, 0.6)); }
+}
+
+/* Laser scan line over the logo */
+.splash-scanline {
+  position: absolute;
+  top: 0;
+  left: -20%;
+  width: 140%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--crimson-bright), #fff, var(--crimson-bright), transparent);
+  box-shadow: 0 0 14px var(--crimson-bright);
+  animation: scanSweep 2.2s infinite ease-in-out;
+}
+
+@keyframes scanSweep {
+  0% { top: 0%; opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.splash-association {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #60a5fa;
+  margin-bottom: 0.25rem;
+}
+
+.splash-title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: var(--white);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  margin-bottom: 1.5rem;
+}
+
+.splash-progress-track {
+  width: 100%;
+  height: 4px;
+  background: #1e2430;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+.splash-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #3b82f6, var(--crimson-bright));
+  box-shadow: 0 0 10px var(--crimson-bright);
+  transition: width 0.1s linear;
+}
+
+.splash-status {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+/* ==========================================================================
+   NAVIGATION BAR & BRANDING
+   ========================================================================== */
+.navbar {
+  background: rgba(15, 18, 23, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0.85rem 0;
+}
+
+.nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+}
+
+.brand-logo-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+}
+
+.brand-text h1 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--white);
+  line-height: 1.2;
+}
+
+.brand-text p {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--crimson-bright);
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ==========================================================================
+   AUTHENTICATION VIEW (LOGIN MODALS / CARDS)
+   ========================================================================== */
+.auth-wrapper {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 2.25rem 2rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.auth-header p {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.auth-alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  margin-bottom: 1.25rem;
+  display: none;
+}
+
+.auth-alert-error {
+  background: var(--status-danger-bg);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* ==========================================================================
+   STUDENT DASHBOARD
+   ========================================================================== */
+.student-header-banner {
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.12), rgba(15, 18, 23, 0.95));
+  border: 1px solid var(--border-crimson);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  margin: 1.5rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+}
+
+.student-team-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.student-team-id {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--crimson-bright);
+  background: rgba(229, 9, 20, 0.15);
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-crimson);
+}
+
+.student-badges {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Active Room Countdown Widget */
+.countdown-box {
+  background: radial-gradient(circle at center, rgba(229, 9, 20, 0.15) 0%, rgba(15, 18, 23, 0.9) 100%);
+  border: 2px solid var(--crimson);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  text-align: center;
+  box-shadow: 0 0 30px var(--crimson-glow);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-box.urgent {
+  animation: urgentPulse 1s infinite alternate;
+}
+
+@keyframes urgentPulse {
+  0% { box-shadow: 0 0 20px var(--crimson-glow); border-color: var(--crimson); }
+  100% { box-shadow: 0 0 50px rgba(255, 43, 55, 0.8); border-color: var(--crimson-bright); }
+}
+
+.countdown-room-label {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--white);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.countdown-digits {
+  font-family: var(--font-mono);
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+  line-height: 1.1;
+  margin: 0.5rem 0;
+}
+
+.countdown-subtext {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--crimson-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+
+/* Elimination Banner */
+.eliminated-banner {
+  background: rgba(220, 38, 38, 0.18);
+  border: 2px solid #ef4444;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #fee2e2;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+}
+
+.eliminated-banner h3 {
+  color: #ef4444;
+  font-size: 1.5rem;
+  margin-bottom: 0.4rem;
+}
+
+/* ==========================================================================
+   LIVE LEADERBOARD (SMOOTH ROW REORDERING & ANIMATIONS)
+   ========================================================================== */
+.leaderboard-container {
+  margin-top: 1.5rem;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.5rem;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.25s, box-shadow 0.25s;
+  position: relative;
+  will-change: transform;
+}
+
+.leaderboard-row:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-active);
+}
+
+.leaderboard-row.highlight-update {
+  border-color: var(--crimson-bright);
+  box-shadow: 0 0 20px var(--crimson-glow);
+  animation: rowHighlight 1.5s ease-out;
+}
+
+@keyframes rowHighlight {
+  0% { background: rgba(229, 9, 20, 0.25); }
+  100% { background: var(--bg-card); }
+}
+
+.leaderboard-row.current-team {
+  border: 1.5px solid var(--crimson);
+  background: rgba(229, 9, 20, 0.08);
+}
+
+.rank-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 800;
+  background: #1a1e28;
+  color: var(--white);
+  border: 1px solid var(--border-subtle);
+  margin-right: 1.25rem;
+  flex-shrink: 0;
+}
+
+.rank-1 .rank-badge {
+  background: linear-gradient(135deg, #ffd700, #b8860b);
+  color: #000;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  border: none;
+}
+
+.rank-2 .rank-badge {
+  background: linear-gradient(135deg, #e0e0e0, #9e9e9e);
+  color: #000;
+  box-shadow: 0 0 15px rgba(224, 224, 224, 0.4);
+  border: none;
+}
+
+.rank-3 .rank-badge {
+  background: linear-gradient(135deg, #cd7f32, #8b4513);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.4);
+  border: none;
+}
+
+.leaderboard-team-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.leaderboard-team-name {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.05em;
+}
+
+.leaderboard-score-wrapper {
+  text-align: right;
+}
+
+.leaderboard-score {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--crimson-bright);
+  letter-spacing: 0.05em;
+}
+
+.leaderboard-score-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   SUB ADMIN / VOLUNTEER SCANNER INTERFACE
+   ========================================================================== */
+.scanner-container {
+  max-width: 680px;
+  margin: 1.5rem auto;
+}
+
+.scanner-room-hero {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-crimson);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.camera-viewport {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 280px;
+  background: #000;
+  border: 2px dashed var(--border-active);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#reader {
+  width: 100% !important;
+  border: none !important;
+}
+
+#reader video {
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+/* Target Crosshair */
+.scanner-crosshair {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 2px solid rgba(229, 9, 20, 0.7);
+  box-shadow: 0 0 15px var(--crimson-glow);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.scanner-crosshair::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--crimson);
+  box-shadow: 0 0 8px var(--crimson-bright);
+  animation: laserPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes laserPulse {
+  0%, 100% { top: 10%; opacity: 0.4; }
+  50% { top: 90%; opacity: 1; }
+}
+
+/* Scan Feedback Card (Access Granted / Denied) */
+.scan-result-card {
+  margin-top: 1.5rem;
+  padding: 1.75rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+  transition: all 0.3s ease;
+  animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.scan-result-card.granted {
+  background: rgba(16, 185, 129, 0.12);
+  border: 2px solid var(--status-active);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+}
+
+.scan-result-card.denied {
+  background: rgba(220, 38, 38, 0.15);
+  border: 2px solid var(--crimson);
+  box-shadow: 0 0 35px var(--crimson-glow);
+}
+
+.scan-result-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.08em;
+}
+
+.scan-result-card.granted .scan-result-title {
+  color: var(--status-active);
+}
+
+.scan-result-card.denied .scan-result-title {
+  color: var(--crimson-bright);
+}
+
+.scan-result-details {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  color: var(--white);
+  margin-bottom: 1.25rem;
+}
+
+/* ==========================================================================
+   HEAD ADMIN DASHBOARD & COMMAND CENTER
+   ========================================================================== */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 70px);
+}
+
+.admin-sidebar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  padding: 1.5rem 1rem;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.admin-nav-item:hover, .admin-nav-item.active {
+  background: var(--crimson-dim);
+  color: var(--white);
+  border-left: 3px solid var(--crimson);
+}
+
+.admin-content {
+  padding: 2rem;
+  max-width: 1300px;
+}
+
+/* Metric Cards Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  position: relative;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--border-subtle);
+}
+
+.metric-card.accent-red::before {
+  background: var(--crimson);
+}
+
+.metric-card.accent-green::before {
+  background: var(--status-active);
+}
+
+.metric-card.accent-amber::before {
+  background: var(--status-warning);
+}
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--white);
+}
+
+/* Rooms Occupancy Widget */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.room-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  position: relative;
+}
+
+.room-card.occupied {
+  border-color: var(--border-crimson);
+  box-shadow: 0 0 20px rgba(229, 9, 20, 0.15);
+}
+
+/* Table Design */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--bg-card);
+}
+
+.admin-table th {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-subtle);
+  letter-spacing: 0.05em;
+}
+
+.admin-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+}
+
+.admin-table tr:hover td {
+  background: var(--bg-card-hover);
+}
+
+/* Inline Edit Score Input */
+.score-input {
+  width: 75px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--crimson-bright);
+  font-weight: 800;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  text-align: center;
+}
+
+.score-input:focus {
+  border-color: var(--crimson);
+  outline: none;
+}
+
+/* Modal Dialogs */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 520px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+  position: relative;
+  transform: translateY(20px);
+  transition: transform 0.2s ease;
+}
+
+.modal-overlay.active .modal-card {
+  transform: translateY(0);
+}
+
+/* Danger Modal for Event Reset */
+.modal-danger {
+  border: 2px solid var(--crimson);
+  box-shadow: 0 0 40px var(--crimson-glow);
+}
+
+.danger-stripes {
+  height: 6px;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--crimson),
+    var(--crimson) 10px,
+    #000 10px,
+    #000 20px
+  );
+  margin-bottom: 1.5rem;
+}
+
+/* QR Code Modal Display */
+.qr-display-box {
+  text-align: center;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: var(--radius-md);
+  margin: 1.5rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.qr-display-box img {
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+}
+
+/* Time's Up Fullscreen Modal */
+.times-up-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(185, 28, 28, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  text-align: center;
+  padding: 2rem;
+  animation: alarmFlash 1s infinite alternate;
+}
+
+@keyframes alarmFlash {
+  0% { background: rgba(185, 28, 28, 0.92); }
+  100% { background: rgba(127, 29, 29, 0.97); }
+}
+
+.times-up-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #fff;
+  text-shadow: 0 0 30px #000;
+  margin-bottom: 1rem;
+}
+
+.times-up-team {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.times-up-room {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  color: #fecaca;
+  margin-bottom: 2rem;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (MOBILE, TABLET, DESKTOP)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.75rem 1rem;
+  }
+  
+  .admin-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.5rem;
+  }
+
+  .admin-content {
+    padding: 1rem;
+  }
+  
+  .student-header-banner {
+    padding: 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .student-team-title {
+    font-size: 1.6rem;
+  }
+  
+  .countdown-digits {
+    font-size: 2.8rem;
+  }
+  
+  .leaderboard-row {
+    padding: 0.75rem 1rem;
+  }
+  
+  .rank-badge {
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+    margin-right: 0.75rem;
+  }
+  
+  .leaderboard-team-name {
+    font-size: 1rem;
+  }
+  
+  .leaderboard-score {
+    font-size: 1.2rem;
+  }
+}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THE AURORA PROTOCOL — Student Portal | INTELLIX</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Ambient CRT Scanline Effect -->
+  <div class="scanlines"></div>
+
+  <!-- =========================================================================
+       1. INTELLIX STUDENT LOADING / SPLASH SCREEN (Strict Requirement: 2-3s)
+       ========================================================================= -->
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo-wrapper">
+        <img src="/assets/intellix-logo.png" alt="INTELLIX Logo" class="splash-logo" id="splash-logo-img">
+        <div class="splash-scanline"></div>
+      </div>
+      <div class="splash-association">INTELLIX</div>
+      <div class="splash-title">THE AURORA PROTOCOL</div>
+      <div class="splash-progress-track">
+        <div class="splash-progress-bar" id="splash-progress-bar"></div>
+      </div>
+      <div class="splash-status" id="splash-status-text">INITIALIZING DIGITAL CASE FILES... 0%</div>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar" id="app-nav" style="display: none;">
+    <div class="container nav-content">
+      <a href="/student" class="brand-wrapper">
+        <img src="/assets/intellix-logo.png" alt="INTELLIX Logo" class="brand-logo-img">
+        <div class="brand-text">
+          <h1>THE AURORA PROTOCOL</h1>
+          <p>INTELLIX INVESTIGATION PORTAL</p>
+        </div>
+      </a>
+      <div class="nav-actions">
+        <button id="btn-sound-toggle" class="btn btn-secondary btn-sm" title="Toggle Tactical Sounds">
+          🔊 AUDIO ON
+        </button>
+        <button id="btn-logout" class="btn btn-outline-crimson btn-sm" style="display: none;">
+          LOGOUT
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- =========================================================================
+         2. STUDENT LOGIN VIEW
+         ========================================================================= -->
+    <div id="student-login-view" class="auth-wrapper" style="display: none;">
+      <div class="auth-card tactical-frame">
+        <div class="auth-header">
+          <div class="classified-tag" style="margin-bottom: 0.75rem;">TEAM ACCESS CONTROL</div>
+          <h2>INVESTIGATOR LOGIN</h2>
+          <p>AUTHENTICATE ASSIGNED TEAM CREDENTIALS</p>
+        </div>
+
+        <div id="login-alert" class="auth-alert auth-alert-error"></div>
+
+        <form id="student-login-form">
+          <div class="form-group">
+            <label class="form-label" for="login-team-id">TEAM IDENTIFIER (ID)</label>
+            <input type="text" id="login-team-id" class="form-control" placeholder="e.g. AURORA001" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">TEAM NAME / PASSWORD</label>
+            <input type="text" id="login-password" class="form-control" placeholder="e.g. TEAM ALPHA" required autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="btn-login-submit">
+            ACCESS INVESTIGATION TERMINAL
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         3. STUDENT DASHBOARD VIEW
+         ========================================================================= -->
+    <div id="student-dashboard-view" style="display: none; padding-bottom: 3rem;">
+      <!-- Elimination Warning Banner (Hidden by default) -->
+      <div id="eliminated-notice" class="eliminated-banner" style="display: none;">
+        <h3>🚫 TEAM ELIMINATED</h3>
+        <p>Your team has been eliminated from active competition in The Aurora Protocol by the Head Admin.</p>
+      </div>
+
+      <!-- Team Overview Banner -->
+      <div class="student-header-banner tactical-frame">
+        <div>
+          <div style="margin-bottom: 0.5rem;">
+            <span class="classified-tag">CASE DOSSIER</span>
+            <span id="badge-team-id" class="student-team-id">AURORA000</span>
+          </div>
+          <h2 id="display-team-name" class="student-team-title">TEAM NAME</h2>
+        </div>
+
+        <div class="student-badges">
+          <div class="badge badge-crimson" id="badge-current-round">ROUND 1</div>
+          <div class="badge badge-active" id="badge-team-status">ACTIVE</div>
+          <div class="badge badge-crimson" style="font-size: 0.95rem; padding: 0.4rem 1rem;">
+            SCORE: <span id="display-team-score" class="mono" style="font-weight: 800; margin-left: 0.3rem;">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Room Countdown (Shown when team is inside an active room) -->
+      <div id="active-room-countdown" class="countdown-box" style="display: none;">
+        <div class="countdown-room-label">
+          🚨 <span id="countdown-room-name">POLICE INVESTIGATION ROOM</span>
+        </div>
+        <div class="countdown-digits" id="countdown-timer-display">00:00</div>
+        <div class="countdown-subtext">INVESTIGATION SESSION IN PROGRESS</div>
+      </div>
+
+      <!-- Investigation Room Status Cards -->
+      <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <div class="card-header-title">
+            <span>📁</span>
+            <span>ROOM CLEARANCE STATUS (CURRENT ROUND)</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+          <div class="card" style="background: var(--bg-surface); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h4 style="font-size: 0.95rem;">POLICE INVESTIGATION ROOM</h4>
+                <p class="mono text-dim" style="font-size: 0.75rem;">ROOM 1</p>
+              </div>
+              <span id="status-room-police" class="badge badge-warning">NOT ENTERED</span>
+            </div>
+          </div>
+
+          <div class="card" style="background: var(--bg-surface); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h4 style="font-size: 0.95rem;">SCIENTIST LAB</h4>
+                <p class="mono text-dim" style="font-size: 0.75rem;">ROOM 2</p>
+              </div>
+              <span id="status-room-lab" class="badge badge-warning">NOT ENTERED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Dynamic Leaderboard -->
+      <div class="card leaderboard-container">
+        <div class="card-header">
+          <div class="card-header-title">
+            <span>🏆</span>
+            <span>LIVE EVENT LEADERBOARD</span>
+          </div>
+          <div class="badge badge-crimson" style="animation: urgentPulse 2s infinite alternate;">
+            🔴 LIVE BROADCAST
+          </div>
+        </div>
+
+        <div id="leaderboard-list" class="leaderboard-list">
+          <!-- Dynamically populated rows with FLIP animation -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Socket.IO Client Library -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Tactical Sound System -->
+  <script src="/js/sound.js"></script>
+  <!-- API Client -->
+  <script src="/js/api.js"></script>
+  <!-- Student Portal Logic -->
+  <script src="/js/student.js"></script>
+</body>
+</html>
