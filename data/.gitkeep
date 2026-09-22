@@ -1,0 +1,2 @@
+# This file ensures the data/ directory is tracked by Git
+# The aurora.sqlite database will be auto-created here on first run

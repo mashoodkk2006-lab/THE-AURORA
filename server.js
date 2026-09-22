@@ -1,11 +1,19 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
+
+// Ensure data/ directory exists (important for Railway and fresh deployments)
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log('Created data/ directory for database storage.');
+}
 
 const config = require('./config');
 const db = require('./database');
