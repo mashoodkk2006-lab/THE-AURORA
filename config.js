@@ -1,12 +1,12 @@
 const path = require('path');
 const os = require('os');
 
-// On Railway and most cloud platforms, /tmp is always writable.
-// Locally, use the data/ folder for persistence.
-const isProduction = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
-const DB_PATH = isProduction
+// On Render, Railway, and cloud platforms, /tmp is always writable.
+// If DB_PATH is explicitly set (e.g., persistent disk mount), respect it.
+const isProduction = process.env.RENDER || process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
+const DB_PATH = process.env.DB_PATH || (isProduction
   ? path.join(os.tmpdir(), 'aurora.sqlite')
-  : path.join(__dirname, 'data', 'aurora.sqlite');
+  : path.join(__dirname, 'data', 'aurora.sqlite'));
 
 module.exports = {
   PORT: process.env.PORT || 3000,

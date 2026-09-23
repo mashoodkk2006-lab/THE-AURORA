@@ -1,9 +1,23 @@
+const fs = require('fs');
+const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const config = require('./config');
 
-const db = new sqlite3.Database(config.DB_PATH);
+// Ensure parent directory exists to prevent SQLITE_CANTOPEN
+const dbDir = path.dirname(config.DB_PATH);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
+const db = new sqlite3.Database(config.DB_PATH, (err) => {
+  if (err) {
+    console.error(`[DB ERROR] Failed to connect to SQLite at ${config.DB_PATH}:`, err.message);
+  } else {
+    console.log(`[DB] Connected successfully to SQLite database at ${config.DB_PATH}`);
+  }
+});
 
 // Helper promise wrappers for sqlite3
 function run(sql, params = []) {
