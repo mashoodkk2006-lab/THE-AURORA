@@ -16,9 +16,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.24.4",
-    "pg": "^8.23.0",
     "qrcode": "^1.5.4",
-    "socket.io": "^4.8.1",
-    "sqlite3": "^5.1.7"
+    "socket.io": "^4.8.1"
   }
 }

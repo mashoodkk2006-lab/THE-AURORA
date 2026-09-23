@@ -1,225 +1,136 @@
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const config = require('./config');
 
-let dbDriver = 'sqlite';
-let sqliteDb = null;
-let pgPool = null;
-let mysqlPool = null;
+// ─── Startup Guard ────────────────────────────────────────────────────────────
+// MySQL is REQUIRED. Exit immediately if credentials are not configured.
+const hasMySqlEnv =
+  config.MYSQL_URL ||
+  (config.MYSQL_CONFIG &&
+    config.MYSQL_CONFIG.host &&
+    config.MYSQL_CONFIG.database);
 
-// Determine which database driver to use: MySQL > PostgreSQL > SQLite (fallback)
-const hasMySqlEnv = config.MYSQL_URL || (config.MYSQL_CONFIG && config.MYSQL_CONFIG.host && config.MYSQL_CONFIG.database);
-const hasPgEnv = config.DATABASE_URL && (config.DATABASE_URL.startsWith('postgres') || config.DATABASE_URL.startsWith('postgresql'));
+if (!hasMySqlEnv) {
+  console.error('[DB FATAL] MySQL credentials are not configured.');
+  console.error('[DB FATAL] Please set MYSQL_URL or MYSQLHOST/MYSQLUSER/MYSQLPASSWORD/MYSQLDATABASE in your .env file.');
+  process.exit(1);
+}
 
-if (hasMySqlEnv) {
-  dbDriver = 'mysql';
-  const mysql = require('mysql2/promise');
+// ─── MySQL Pool ───────────────────────────────────────────────────────────────
+const mysql = require('mysql2/promise');
 
-  if (config.MYSQL_URL) {
-    const isLocal = config.MYSQL_URL.includes('localhost') || config.MYSQL_URL.includes('127.0.0.1');
-    mysqlPool = mysql.createPool({
-      uri: config.MYSQL_URL,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      ssl: isLocal ? undefined : { rejectUnauthorized: false }
-    });
-  } else {
-    const isLocal = config.MYSQL_CONFIG.host && (config.MYSQL_CONFIG.host.includes('localhost') || config.MYSQL_CONFIG.host.includes('127.0.0.1'));
-    mysqlPool = mysql.createPool({
-      host: config.MYSQL_CONFIG.host,
-      user: config.MYSQL_CONFIG.user,
-      password: config.MYSQL_CONFIG.password,
-      database: config.MYSQL_CONFIG.database,
-      port: config.MYSQL_CONFIG.port || 3306,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      ssl: isLocal ? undefined : { rejectUnauthorized: false }
-    });
-  }
+let mysqlPool;
 
-  console.log('[DB] Configured for MySQL (Cloud / Remote Database)');
-} else if (hasPgEnv) {
-  dbDriver = 'postgres';
-  const { Pool } = require('pg');
-  const isLocalPg = config.DATABASE_URL.includes('localhost') || config.DATABASE_URL.includes('127.0.0.1');
-
-  pgPool = new Pool({
-    connectionString: config.DATABASE_URL,
-    ssl: isLocalPg ? false : { rejectUnauthorized: false }
+if (config.MYSQL_URL) {
+  const isLocal =
+    config.MYSQL_URL.includes('localhost') ||
+    config.MYSQL_URL.includes('127.0.0.1');
+  mysqlPool = mysql.createPool({
+    uri: config.MYSQL_URL,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    ssl: isLocal ? undefined : { rejectUnauthorized: false }
   });
-
-  pgPool.on('error', (err) => {
-    console.error('[DB ERROR] Unexpected PostgreSQL error on idle client:', err);
-  });
-
-  console.log('[DB] Configured for PostgreSQL (Cloud Database)');
 } else {
-  dbDriver = 'sqlite';
-  const sqlite3 = require('sqlite3').verbose();
-
-  // Ensure parent directory exists to prevent SQLITE_CANTOPEN
-  const dbDir = path.dirname(config.DB_PATH);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
-
-  sqliteDb = new sqlite3.Database(config.DB_PATH, (err) => {
-    if (err) {
-      console.error(`[DB ERROR] Failed to connect to SQLite at ${config.DB_PATH}:`, err.message);
-    } else {
-      console.log(`[DB] Connected successfully to SQLite database at ${config.DB_PATH}`);
-    }
+  const isLocal =
+    config.MYSQL_CONFIG.host &&
+    (config.MYSQL_CONFIG.host.includes('localhost') ||
+      config.MYSQL_CONFIG.host.includes('127.0.0.1'));
+  mysqlPool = mysql.createPool({
+    host: config.MYSQL_CONFIG.host,
+    user: config.MYSQL_CONFIG.user,
+    password: config.MYSQL_CONFIG.password,
+    database: config.MYSQL_CONFIG.database,
+    port: config.MYSQL_CONFIG.port || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    ssl: isLocal ? undefined : { rejectUnauthorized: false }
   });
 }
+
+console.log('[DB] Configured for MySQL');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function generateSecureToken(teamId) {
   const hash = crypto.randomBytes(12).toString('hex');
   return `AURORA_${teamId}_${hash}`;
 }
 
-// Convert SQLite/ANSI queries for PostgreSQL ($1, $2, ...)
-function convertToPgSql(sql) {
-  let paramIndex = 1;
-  let pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-  pgSql = pgSql.replace(/INSERT\s+OR\s+IGNORE\s+INTO/gi, 'INSERT INTO');
-  return pgSql;
-}
-
-// Convert SQLite/ANSI queries for MySQL (ON DUPLICATE KEY UPDATE)
+/**
+ * Convert ANSI/SQLite conflict syntax to MySQL syntax.
+ * Handles:
+ *   INSERT OR IGNORE INTO  →  INSERT IGNORE INTO
+ *   ON CONFLICT(...) DO NOTHING  →  ON DUPLICATE KEY UPDATE id=id
+ *   ON CONFLICT(...) DO UPDATE SET ...  →  ON DUPLICATE KEY UPDATE ...
+ */
 function convertToMySql(sql) {
   let mySql = sql;
-  // Replace ON CONFLICT (...) DO NOTHING with ON DUPLICATE KEY UPDATE id=id
-  mySql = mySql.replace(/ON\s+CONFLICT\s*\([^)]*\)\s*DO\s+NOTHING/gi, 'ON DUPLICATE KEY UPDATE id=id');
-  // Replace ON CONFLICT(...) DO UPDATE SET ... with ON DUPLICATE KEY UPDATE ...
-  mySql = mySql.replace(/ON\s+CONFLICT\s*\([^)]*\)\s*DO\s+UPDATE\s+SET\s+(.*)/gis, (match, updateClause) => {
-    const convertedClause = updateClause.replace(/excluded\.(\w+)/gi, (m, col) => `VALUES(${col})`);
-    return `ON DUPLICATE KEY UPDATE ${convertedClause}`;
-  });
+  mySql = mySql.replace(/INSERT\s+OR\s+IGNORE\s+INTO/gi, 'INSERT IGNORE INTO');
+  mySql = mySql.replace(
+    /ON\s+CONFLICT\s*\([^)]*\)\s*DO\s+NOTHING/gi,
+    'ON DUPLICATE KEY UPDATE id=id'
+  );
+  mySql = mySql.replace(
+    /ON\s+CONFLICT\s*\([^)]*\)\s*DO\s+UPDATE\s+SET\s+(.*)/gis,
+    (match, updateClause) => {
+      const converted = updateClause.replace(
+        /excluded\.(\w+)/gi,
+        (m, col) => `VALUES(${col})`
+      );
+      return `ON DUPLICATE KEY UPDATE ${converted}`;
+    }
+  );
   return mySql;
 }
 
-// Unified Promise wrapper for INSERT, UPDATE, DELETE
+// ─── Unified DB Interface ─────────────────────────────────────────────────────
+
+/** Execute INSERT / UPDATE / DELETE — returns { id, changes } */
 function run(sql, params = []) {
-  if (dbDriver === 'mysql') {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const mySql = convertToMySql(sql);
-        const [result] = await mysqlPool.query(mySql, params);
-        resolve({ id: result.insertId || null, changes: result.affectedRows });
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  if (dbDriver === 'postgres') {
-    return new Promise(async (resolve, reject) => {
-      try {
-        let pgSql = convertToPgSql(sql);
-        const isInsert = /^\s*INSERT\s+/i.test(sql);
-        if (isInsert && !/RETURNING/i.test(pgSql)) {
-          pgSql += ' RETURNING id';
-        }
-        const res = await pgPool.query(pgSql, params);
-        const lastID = res.rows && res.rows[0] && res.rows[0].id !== undefined ? res.rows[0].id : null;
-        resolve({ id: lastID, changes: res.rowCount });
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  // SQLite implementation
-  return new Promise((resolve, reject) => {
-    sqliteDb.run(sql, params, function (err) {
-      if (err) return reject(err);
-      resolve({ id: this.lastID, changes: this.changes });
-    });
+  return new Promise(async (resolve, reject) => {
+    try {
+      const mySql = convertToMySql(sql);
+      const [result] = await mysqlPool.query(mySql, params);
+      resolve({ id: result.insertId || null, changes: result.affectedRows });
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
-// Unified Promise wrapper for single row queries
+/** Fetch a single row — returns row object or null */
 function get(sql, params = []) {
-  if (dbDriver === 'mysql') {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const mySql = convertToMySql(sql);
-        const [rows] = await mysqlPool.query(mySql, params);
-        resolve(rows && rows[0] ? rows[0] : null);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  if (dbDriver === 'postgres') {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const pgSql = convertToPgSql(sql);
-        const res = await pgPool.query(pgSql, params);
-        resolve(res.rows[0] || null);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  // SQLite implementation
-  return new Promise((resolve, reject) => {
-    sqliteDb.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row || null);
-    });
+  return new Promise(async (resolve, reject) => {
+    try {
+      const mySql = convertToMySql(sql);
+      const [rows] = await mysqlPool.query(mySql, params);
+      resolve(rows && rows[0] ? rows[0] : null);
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
-// Unified Promise wrapper for multi-row queries
+/** Fetch all matching rows — returns array (empty if none) */
 function all(sql, params = []) {
-  if (dbDriver === 'mysql') {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const mySql = convertToMySql(sql);
-        const [rows] = await mysqlPool.query(mySql, params);
-        resolve(rows || []);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  if (dbDriver === 'postgres') {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const pgSql = convertToPgSql(sql);
-        const res = await pgPool.query(pgSql, params);
-        resolve(res.rows || []);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  // SQLite implementation
-  return new Promise((resolve, reject) => {
-    sqliteDb.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
+  return new Promise(async (resolve, reject) => {
+    try {
+      const mySql = convertToMySql(sql);
+      const [rows] = await mysqlPool.query(mySql, params);
       resolve(rows || []);
-    });
+    } catch (err) {
+      reject(err);
+    }
   });
 }
+
+// ─── Schema Init ──────────────────────────────────────────────────────────────
 
 async function initDatabase() {
-  if (dbDriver === 'mysql') {
-    await initMysql();
-  } else if (dbDriver === 'postgres') {
-    await initPostgres();
-  } else {
-    await initSqlite();
-  }
+  await initMysql();
   await seedDefaultData();
 }
 
@@ -328,211 +239,7 @@ async function initMysql() {
   `);
 }
 
-async function initSqlite() {
-  await run('PRAGMA foreign_keys = ON;');
-  await run('PRAGMA journal_mode = WAL;');
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS system_settings (
-      setting_key TEXT PRIMARY KEY,
-      setting_value TEXT
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      name TEXT,
-      role TEXT NOT NULL CHECK(role IN ('HEAD_ADMIN', 'SUB_ADMIN')),
-      assigned_room TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS teams (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      team_id TEXT UNIQUE NOT NULL,
-      team_name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      qr_token TEXT UNIQUE NOT NULL,
-      score INTEGER DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'ELIMINATED')),
-      current_round INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS rounds (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      round_number INTEGER UNIQUE NOT NULL,
-      status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'ACTIVE', 'COMPLETED')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS rooms (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      room_code TEXT UNIQUE NOT NULL,
-      room_name TEXT NOT NULL
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS room_settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      round_id INTEGER NOT NULL,
-      room_id INTEGER NOT NULL,
-      duration_minutes INTEGER NOT NULL DEFAULT 5,
-      FOREIGN KEY(round_id) REFERENCES rounds(id) ON DELETE CASCADE,
-      FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE CASCADE,
-      UNIQUE(round_id, room_id)
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS room_entries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      team_id INTEGER NOT NULL,
-      round_id INTEGER NOT NULL,
-      room_id INTEGER NOT NULL,
-      sub_admin_id INTEGER,
-      entry_time INTEGER NOT NULL,
-      expiry_time INTEGER NOT NULL,
-      status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'COMPLETED', 'EXPIRED')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
-      FOREIGN KEY(round_id) REFERENCES rounds(id) ON DELETE CASCADE,
-      FOREIGN KEY(room_id) REFERENCES rooms(id) ON DELETE SET NULL,
-      FOREIGN KEY(sub_admin_id) REFERENCES users(id) ON DELETE SET NULL
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS score_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      team_id INTEGER NOT NULL,
-      old_score INTEGER NOT NULL,
-      new_score INTEGER NOT NULL,
-      changed_by TEXT NOT NULL,
-      changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS activity_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      username TEXT,
-      action TEXT NOT NULL,
-      details TEXT,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-}
-
-async function initPostgres() {
-  await run(`
-    CREATE TABLE IF NOT EXISTS system_settings (
-      setting_key VARCHAR(100) PRIMARY KEY,
-      setting_value TEXT
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username VARCHAR(255) UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      name VARCHAR(255),
-      role VARCHAR(50) NOT NULL CHECK(role IN ('HEAD_ADMIN', 'SUB_ADMIN')),
-      assigned_room VARCHAR(50),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS teams (
-      id SERIAL PRIMARY KEY,
-      team_id VARCHAR(100) UNIQUE NOT NULL,
-      team_name VARCHAR(255) NOT NULL,
-      password_hash TEXT NOT NULL,
-      qr_token VARCHAR(255) UNIQUE NOT NULL,
-      score INTEGER DEFAULT 0,
-      status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'ELIMINATED')),
-      current_round INTEGER DEFAULT 1,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS rounds (
-      id SERIAL PRIMARY KEY,
-      round_number INTEGER UNIQUE NOT NULL,
-      status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'ACTIVE', 'COMPLETED')),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS rooms (
-      id SERIAL PRIMARY KEY,
-      room_code VARCHAR(100) UNIQUE NOT NULL,
-      room_name VARCHAR(255) NOT NULL
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS room_settings (
-      id SERIAL PRIMARY KEY,
-      round_id INTEGER NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
-      room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-      duration_minutes INTEGER NOT NULL DEFAULT 5,
-      UNIQUE(round_id, room_id)
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS room_entries (
-      id SERIAL PRIMARY KEY,
-      team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      round_id INTEGER NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
-      room_id INTEGER REFERENCES rooms(id) ON DELETE SET NULL,
-      sub_admin_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      entry_time BIGINT NOT NULL,
-      expiry_time BIGINT NOT NULL,
-      status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'COMPLETED', 'EXPIRED')),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS score_history (
-      id SERIAL PRIMARY KEY,
-      team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      old_score INTEGER NOT NULL,
-      new_score INTEGER NOT NULL,
-      changed_by VARCHAR(255) NOT NULL,
-      changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  await run(`
-    CREATE TABLE IF NOT EXISTS activity_logs (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER,
-      username VARCHAR(255),
-      action VARCHAR(100) NOT NULL,
-      details TEXT,
-      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-}
+// ─── Seed Default Data ────────────────────────────────────────────────────────
 
 async function seedDefaultData() {
   // 1. Head Admin
@@ -573,13 +280,25 @@ async function seedDefaultData() {
       policeDuration = 6;
       labDuration = 5;
     }
-    const existingPolice = await get('SELECT id FROM room_settings WHERE round_id = ? AND room_id = ?', [round.id, policeRoom.id]);
+    const existingPolice = await get(
+      'SELECT id FROM room_settings WHERE round_id = ? AND room_id = ?',
+      [round.id, policeRoom.id]
+    );
     if (!existingPolice) {
-      await run('INSERT INTO room_settings (round_id, room_id, duration_minutes) VALUES (?, ?, ?)', [round.id, policeRoom.id, policeDuration]);
+      await run(
+        'INSERT INTO room_settings (round_id, room_id, duration_minutes) VALUES (?, ?, ?)',
+        [round.id, policeRoom.id, policeDuration]
+      );
     }
-    const existingLab = await get('SELECT id FROM room_settings WHERE round_id = ? AND room_id = ?', [round.id, labRoom.id]);
+    const existingLab = await get(
+      'SELECT id FROM room_settings WHERE round_id = ? AND room_id = ?',
+      [round.id, labRoom.id]
+    );
     if (!existingLab) {
-      await run('INSERT INTO room_settings (round_id, room_id, duration_minutes) VALUES (?, ?, ?)', [round.id, labRoom.id, labDuration]);
+      await run(
+        'INSERT INTO room_settings (round_id, room_id, duration_minutes) VALUES (?, ?, ?)',
+        [round.id, labRoom.id, labDuration]
+      );
     }
   }
 
@@ -602,20 +321,22 @@ async function seedDefaultData() {
     );
   }
 
-  // 6. Check if system has already completed initial setup
-  // CRITICAL: We DO NOT auto-seed sample teams if setup has already been initialized!
-  const initSetting = await get('SELECT setting_value FROM system_settings WHERE setting_key = ?', ['initial_setup_completed']);
+  // 6. One-time initial setup guard
+  const initSetting = await get(
+    'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+    ['initial_setup_completed']
+  );
   const teamCount = await get('SELECT COUNT(*) as count FROM teams');
   const count = parseInt(teamCount.count, 10);
 
   if (!initSetting) {
     if (count === 0) {
       const sampleTeams = [
-        { id: 'AURORA001', name: 'TEAM ALPHA', score: 950 },
-        { id: 'AURORA002', name: 'TEAM PHANTOM', score: 910 },
-        { id: 'AURORA003', name: 'TEAM SHADOW', score: 875 },
-        { id: 'AURORA004', name: 'TEAM VECTOR', score: 820 },
-        { id: 'AURORA005', name: 'TEAM HUNTER', score: 780 }
+        { id: 'AURORA001', name: 'TEAM ALPHA',   score: 950 },
+        { id: 'AURORA002', name: 'TEAM PHANTOM',  score: 910 },
+        { id: 'AURORA003', name: 'TEAM SHADOW',   score: 875 },
+        { id: 'AURORA004', name: 'TEAM VECTOR',   score: 820 },
+        { id: 'AURORA005', name: 'TEAM HUNTER',   score: 780 }
       ];
 
       for (const t of sampleTeams) {
@@ -638,24 +359,28 @@ async function seedDefaultData() {
   }
 }
 
-// Log activity helper
+// ─── Activity Logger ──────────────────────────────────────────────────────────
+
 async function logActivity(userId, username, action, details) {
   try {
     await run(
       'INSERT INTO activity_logs (user_id, username, action, details) VALUES (?, ?, ?, ?)',
-      [userId || null, username || 'SYSTEM', action, typeof details === 'object' ? JSON.stringify(details) : details]
+      [
+        userId || null,
+        username || 'SYSTEM',
+        action,
+        typeof details === 'object' ? JSON.stringify(details) : details
+      ]
     );
   } catch (err) {
     console.error('Failed to write activity log:', err);
   }
 }
 
+// ─── Exports ──────────────────────────────────────────────────────────────────
+
 module.exports = {
-  db: {
-    run,
-    get,
-    all
-  },
+  db: { run, get, all },
   run,
   get,
   all,
