@@ -22,21 +22,38 @@ const mysql = require('mysql2/promise');
 let mysqlPool;
 
 if (config.MYSQL_URL) {
+  let connectionUrl = config.MYSQL_URL.trim();
+  // Strip unsupported TiDB query parameters like sslaccept if present
+  if (connectionUrl.includes('sslaccept=')) {
+    connectionUrl = connectionUrl.replace(/[?&]sslaccept=[^&]+/gi, '');
+  }
+
   const isLocal =
-    config.MYSQL_URL.includes('localhost') ||
-    config.MYSQL_URL.includes('127.0.0.1');
+    connectionUrl.includes('localhost') ||
+    connectionUrl.includes('127.0.0.1');
+
+  try {
+    const parsedUrl = new URL(connectionUrl.startsWith('mysql://') ? connectionUrl : `mysql://${connectionUrl}`);
+    console.log(`[DB] Target MySQL Host: ${parsedUrl.hostname}, Port: ${parsedUrl.port || 3306}, Database: ${parsedUrl.pathname.replace(/^\//, '') || 'default'}`);
+  } catch (e) {
+    console.log('[DB] Parsing MySQL URL for debug display...');
+  }
+
   mysqlPool = mysql.createPool({
-    uri: config.MYSQL_URL,
+    uri: connectionUrl,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    ssl: isLocal ? undefined : { rejectUnauthorized: false }
+    ssl: isLocal ? undefined : { minVersion: 'TLSv1.2', rejectUnauthorized: false }
   });
 } else {
   const isLocal =
     config.MYSQL_CONFIG.host &&
     (config.MYSQL_CONFIG.host.includes('localhost') ||
       config.MYSQL_CONFIG.host.includes('127.0.0.1'));
+
+  console.log(`[DB] Target MySQL Host: ${config.MYSQL_CONFIG.host}, Port: ${config.MYSQL_CONFIG.port || 3306}, Database: ${config.MYSQL_CONFIG.database}`);
+
   mysqlPool = mysql.createPool({
     host: config.MYSQL_CONFIG.host,
     user: config.MYSQL_CONFIG.user,
@@ -46,7 +63,7 @@ if (config.MYSQL_URL) {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    ssl: isLocal ? undefined : { rejectUnauthorized: false }
+    ssl: isLocal ? undefined : { minVersion: 'TLSv1.2', rejectUnauthorized: false }
   });
 }
 
