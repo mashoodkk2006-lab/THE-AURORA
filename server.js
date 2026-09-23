@@ -1053,8 +1053,13 @@ app.post('/api/admin/reseed-sample-data', authMiddleware, requireHeadAdmin, asyn
       const passHash = await bcrypt.hash(t.name, 10);
       const token = db.generateSecureToken(t.id);
       await db.run(`
-        INSERT OR REPLACE INTO teams (team_id, team_name, password_hash, qr_token, score, status, current_round)
+        INSERT INTO teams (team_id, team_name, password_hash, qr_token, score, status, current_round)
         VALUES (?, ?, ?, ?, ?, 'ACTIVE', 1)
+        ON CONFLICT(team_id) DO UPDATE SET
+          team_name = excluded.team_name,
+          password_hash = excluded.password_hash,
+          qr_token = excluded.qr_token,
+          score = excluded.score
       `, [t.id, t.name, passHash, token, t.score]);
     }
 
